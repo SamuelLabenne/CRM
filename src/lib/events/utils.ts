@@ -185,3 +185,74 @@ export function dateBlockParts(date: Date, tz?: string, locale?: string): { mont
 
 /** Current time in ms (a function so server components can read the clock without tripping the render-purity lint). */
 export const currentTimeMs = () => Date.now();
+
+/** Curated IANA zones for pickers (a fixed list keeps server and browser renders identical). */
+export const COMMON_TIMEZONES = [
+  "UTC",
+  "Pacific/Auckland",
+  "Australia/Sydney",
+  "Australia/Melbourne",
+  "Australia/Brisbane",
+  "Australia/Adelaide",
+  "Australia/Darwin",
+  "Australia/Perth",
+  "Asia/Tokyo",
+  "Asia/Seoul",
+  "Asia/Shanghai",
+  "Asia/Hong_Kong",
+  "Asia/Singapore",
+  "Asia/Bangkok",
+  "Asia/Kolkata",
+  "Asia/Dubai",
+  "Africa/Nairobi",
+  "Africa/Lagos",
+  "Africa/Johannesburg",
+  "Europe/Moscow",
+  "Europe/Istanbul",
+  "Europe/Athens",
+  "Europe/Berlin",
+  "Europe/Paris",
+  "Europe/Madrid",
+  "Europe/Rome",
+  "Europe/Amsterdam",
+  "Europe/London",
+  "Europe/Dublin",
+  "Atlantic/Reykjavik",
+  "America/Sao_Paulo",
+  "America/Argentina/Buenos_Aires",
+  "America/Halifax",
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Phoenix",
+  "America/Los_Angeles",
+  "America/Anchorage",
+  "Pacific/Honolulu",
+];
+
+const AUDIENCE_LABEL = { attended: "attended", no_show: "no-shows", all: "everyone" } as const;
+
+/** Human label for a pending `event.notification` job group, e.g. "Reminder · 1 day before". */
+export function describeScheduledEmail(
+  e: { kind: string; reminderId?: string | null; followUpId?: string | null },
+  notifications: { reminders: { id: string; minutesBefore: number }[]; followUps: { id: string; minutesAfter: number; audience: "attended" | "no_show" | "all" }[] },
+): string {
+  switch (e.kind) {
+    case "reminder": {
+      const r = notifications.reminders.find((x) => x.id === e.reminderId);
+      return r ? `Reminder · ${formatOffset(r.minutesBefore)} before` : "Reminder";
+    }
+    case "follow_up": {
+      const f = notifications.followUps.find((x) => x.id === e.followUpId);
+      return f ? `Follow-up · ${f.minutesAfter === 0 ? "right after the end" : `${formatOffset(f.minutesAfter)} after the end`} (${AUDIENCE_LABEL[f.audience]})` : "Follow-up";
+    }
+    case "confirmation":
+      return "Confirmation";
+    case "waitlisted":
+      return "Waitlist notice";
+    case "cancellation":
+      return "Cancellation";
+    default:
+      return e.kind;
+  }
+}
