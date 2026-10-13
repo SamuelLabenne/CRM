@@ -76,7 +76,12 @@ export async function upsertContact(
 
   let existing: Contact | undefined;
   if (email) [existing] = await tx.select().from(contacts).where(eq(contacts.email, email)).limit(1);
-  if (!existing && phone) [existing] = await tx.select().from(contacts).where(eq(contacts.phone, phone)).limit(1);
+  if (!existing && phone) {
+    // Phone only identifies a person when emails can't disagree: a different email
+    // with the same phone (shared office line, typo, someone else's number) is a new contact.
+    const [byPhone] = await tx.select().from(contacts).where(eq(contacts.phone, phone)).limit(1);
+    if (byPhone && (!email || !byPhone.email)) existing = byPhone;
+  }
 
   const fields = {
     firstName: input.firstName?.trim() || null,

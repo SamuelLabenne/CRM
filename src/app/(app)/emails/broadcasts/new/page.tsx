@@ -23,7 +23,7 @@ export default async function NewBroadcastPage({ searchParams }: PageProps<"/ema
   const initial: BroadcastFormValue = {
     id: null,
     name: first(sp.name)?.slice(0, 120) ?? "",
-    campaignId: isUuid(first(sp.campaignId)) && audience.type !== "campaign" ? first(sp.campaignId)! : null,
+    campaignId: isUuid(first(sp.campaignId)) ? first(sp.campaignId)! : null,
     templateId: null,
     audience,
     subject: first(sp.subject)?.slice(0, 300) ?? "",

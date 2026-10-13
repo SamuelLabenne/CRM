@@ -52,7 +52,8 @@ describe("EmailLink (button support)", () => {
     const button = getAttrs(el({ href: "{{attendee.calendar_url}}", "data-button": "", "data-color": "#10b981" })) as Record<string, unknown>;
     expect(button).toMatchObject({ href: "{{attendee.calendar_url}}", button: true, color: "#10b981" });
     const plain = getAttrs(el({ href: "https://example.com" })) as Record<string, unknown>;
-    expect(plain).toMatchObject({ href: "https://example.com", button: false, color: null });
+    expect(plain).toMatchObject({ href: "https://example.com", button: false });
+    expect(plain.color ?? null).toBeNull(); // TipTap drops null attributes from parse results
     // javascript: links are rejected outright
     expect(getAttrs(el({ href: "javascript:alert(1)" }))).toBe(false);
   });
