@@ -36,9 +36,13 @@ export function UrlFilters({ fields, className }: { fields: UrlFilterField[]; cl
 
   // Keep the box in sync when the URL changes elsewhere (e.g. "clear filters").
   const urlQ = search ? (params.get(search.name) ?? "") : "";
-  useEffect(() => {
-    setQ(urlQ);
-  }, [urlQ]);
+  const [seenUrlQ, setSeenUrlQ] = useState(urlQ);
+  const [pushedQ, setPushedQ] = useState(urlQ);
+  if (urlQ !== seenUrlQ) {
+    setSeenUrlQ(urlQ);
+    // Ignore the echo of our own debounced update (the user may have typed more since).
+    if (urlQ !== pushedQ) setQ(urlQ);
+  }
   useEffect(() => () => clearTimeout(timer.current), []);
 
   const active = fields.some((f) => params.get(f.name));
@@ -55,7 +59,10 @@ export function UrlFilters({ fields, className }: { fields: UrlFilterField[]; cl
                 setQ(e.target.value);
                 clearTimeout(timer.current);
                 const v = e.target.value.trim();
-                timer.current = setTimeout(() => push({ [f.name]: v || null }), 300);
+                timer.current = setTimeout(() => {
+                  setPushedQ(v);
+                  push({ [f.name]: v || null });
+                }, 300);
               }}
               placeholder={f.placeholder ?? "Search…"}
               aria-label={f.placeholder ?? "Search"}
@@ -83,6 +90,7 @@ export function UrlFilters({ fields, className }: { fields: UrlFilterField[]; cl
           type="button"
           onClick={() => {
             setQ("");
+            setPushedQ("");
             push(Object.fromEntries(fields.map((f) => [f.name, null])));
           }}
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"

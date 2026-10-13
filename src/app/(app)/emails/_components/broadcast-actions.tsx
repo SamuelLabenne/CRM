@@ -46,7 +46,10 @@ export function BroadcastActions({
   const duplicate = () =>
     start(async () => {
       const res = await duplicateBroadcastAction(id);
-      if (!res.ok) return toast.error(res.error);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
       toast.success("Broadcast duplicated", { description: "Review the copy and send it when you're ready." });
       router.push(`/emails/broadcasts/${res.data!.id}`);
     });
@@ -101,7 +104,10 @@ export function BroadcastActions({
         destructive
         onConfirm={async () => {
           const res = await cancelBroadcastAction(id);
-          if (!res.ok) return toast.error(res.error);
+          if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
           toast.success(status === "scheduled" ? "Schedule cancelled" : "Sending stopped");
           router.refresh();
         }}
@@ -115,7 +121,10 @@ export function BroadcastActions({
         destructive
         onConfirm={async () => {
           const res = await deleteBroadcastAction(id);
-          if (!res.ok) return toast.error(res.error);
+          if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
           toast.success("Broadcast deleted");
           if (redirectAfterDelete) router.push("/emails");
           else router.refresh();

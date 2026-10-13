@@ -26,7 +26,10 @@ export function TemplateActions({ id, name, isSystem, usage }: { id: string; nam
   const duplicate = () =>
     start(async () => {
       const res = await duplicateTemplateAction(id);
-      if (!res.ok) return toast.error(res.error);
+      if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
       toast.success("Template duplicated");
       router.push(`/emails/templates/${res.data!.id}`);
     });
@@ -77,7 +80,10 @@ export function TemplateActions({ id, name, isSystem, usage }: { id: string; nam
         destructive
         onConfirm={async () => {
           const res = await deleteTemplateAction(id);
-          if (!res.ok) return toast.error(res.error);
+          if (!res.ok) {
+        toast.error(res.error);
+        return;
+      }
           toast.success("Template deleted");
           router.refresh();
         }}
