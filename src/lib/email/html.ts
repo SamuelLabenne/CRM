@@ -9,7 +9,10 @@ const EMPTY_BLOCK = /^<p(?:\s[^>]*)?>\s*(?:<br\s*\/?>)?\s*<\/p>$/i;
  *  - a document that only contains empty paragraphs becomes "".
  */
 export function normalizeEditorHtml(html: string): string {
-  const flat = html.replace(
+  const flat = html
+    // editor-only paint hint for buttons (see EmailLink)
+    .replace(/\sstyle="--btn-color:[^"]*"/gi, "")
+    .replace(
     /<li(\s[^>]*)?>\s*<p(?:\s[^>]*)?>((?:(?!<p[\s>]|<\/p>)[\s\S])*)<\/p>\s*<\/li>/gi,
     (_m, attrs: string | undefined, inner: string) => `<li${attrs ?? ""}>${inner}</li>`,
   );
