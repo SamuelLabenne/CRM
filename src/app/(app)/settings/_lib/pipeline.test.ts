@@ -81,11 +81,22 @@ describe("pipeline stages", () => {
     expect(v.filters.filters[0].value).toBe("contacted");
   });
 
+  it("follows move chains when the destination is also deleted", async () => {
+    await savePipelineStages({ stages: base });
+    const [x] = await db.insert(s.contacts).values({ email: "chain@x.io", stage: "engaged" }).returning();
+    const without = base.filter((st) => st.key !== "engaged" && st.key !== "contacted");
+    const res = await savePipelineStages({ stages: without, moves: { engaged: "contacted", contacted: "follow_up" } });
+    expect(res.moved).toBeGreaterThanOrEqual(1);
+    const [row] = await db.select().from(s.contacts).where(eq(s.contacts.id, x.id));
+    expect(row.stage).toBe("follow_up");
+  });
+
   it("deletes an unused stage without a destination, but never the default 'new' stage", async () => {
     const current = await getSetting("stages");
-    const withoutFollowUp = current.filter((x) => x.key !== "follow_up");
-    const res = await savePipelineStages({ stages: withoutFollowUp });
+    const added = (await savePipelineStages({ stages: [...current, { label: "Temp", color: "#abcdef", category: "active" }] })).stages;
+    expect(added.some((x) => x.key === "temp")).toBe(true);
+    const res = await savePipelineStages({ stages: added.filter((x) => x.key !== "temp") });
     expect(res.moved).toBe(0);
-    await expect(savePipelineStages({ stages: withoutFollowUp.filter((x) => x.key !== "new"), moves: { new: "contacted" } })).rejects.toThrow(/can’t be deleted/);
+    await expect(savePipelineStages({ stages: added.filter((x) => x.key !== "new" && x.key !== "temp"), moves: { new: "contacted" } })).rejects.toThrow(/can’t be deleted/);
   });
 });

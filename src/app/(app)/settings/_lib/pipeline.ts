@@ -133,9 +133,19 @@ export async function savePipelineStages(input: {
 
   const usage = await getStageUsage();
   const redirects = new Map<string, string>();
+  // A destination may itself have been removed in the same save (A → B, then B → C): follow the chain.
+  const resolve = (key: string): string | undefined => {
+    const seen = new Set([key]);
+    let t = input.moves?.[key];
+    while (t && !nextKeys.has(t) && !seen.has(t)) {
+      seen.add(t);
+      t = input.moves?.[t];
+    }
+    return t && nextKeys.has(t) ? t : undefined;
+  };
   for (const r of removed) {
-    const requested = input.moves?.[r.key];
-    if (requested && nextKeys.has(requested)) {
+    const requested = resolve(r.key);
+    if (requested) {
       redirects.set(r.key, requested);
     } else if ((usage[r.key] ?? 0) > 0) {
       throw new PipelineError(`Choose where to move the ${usage[r.key]} contact(s) in “${r.label}”.`);
