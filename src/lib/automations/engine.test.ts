@@ -521,6 +521,34 @@ describe("wait steps", () => {
     expect((await logsOf(run.id)).some((l) => l.status === "exited" && /cancelled/.test(l.message ?? ""))).toBe(true);
   });
 
+  it("exits instead of reminding someone who is still on the waitlist", async () => {
+    const e = await mkEvent({ startsInMs: 3 * DAY });
+    await db.update(events).set({ capacity: 1, waitlistEnabled: true }).where(eq(events.id, e.id));
+    const tpl = await mkTemplate();
+    const a = await mkAutomation({
+      trigger: { type: "event_registered", config: {} },
+      allowReentry: true,
+      steps: [
+        { id: "w", type: "wait_until_event", anchor: "start", offsetMinutes: -60 },
+        { id: "m", type: "send_email", templateId: tpl.id },
+      ],
+    });
+    const seated = await mkContact();
+    const waiting = await mkContact();
+    await db.delete(jobs);
+    await registerForEvent({ eventId: e.id, contactId: seated.id, source: "manual" });
+    const second = await registerForEvent({ eventId: e.id, contactId: waiting.id, source: "manual" });
+    expect(second.waitlisted).toBe(true);
+    await drain();
+    vi.useFakeTimers({ toFake: ["Date"] });
+    vi.setSystemTime(new Date(e.startsAt.getTime()));
+    await drain();
+    expect(await emailsFor(seated.id)).toHaveLength(1);
+    expect(await emailsFor(waiting.id)).toHaveLength(0);
+    const runs = await runsOf(a.id);
+    expect(runs.find((r) => r.contactId === waiting.id)!.status).toBe("exited");
+  });
+
   it("waits again when the event was moved later while the run was waiting", async () => {
     const e = await mkEvent({ startsInMs: 3 * DAY });
     const tpl = await mkTemplate();

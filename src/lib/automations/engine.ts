@@ -596,6 +596,7 @@ async function checkEventWaitResume(
     if (event.status === "cancelled") return { type: "exit", message: `“${event.title}” was cancelled` };
     const attendee = await resolveAttendee(ctx, run.contactId);
     if (attendee?.status === "cancelled") return { type: "exit", message: "The registration was cancelled" };
+    if (attendee?.status === "waitlisted") return { type: "exit", message: "Still on the waitlist – no seat to remind about" };
   }
   const target = eventAnchorTime(event, prev);
   if (target.getTime() > Date.now() + 60_000) return { type: "reschedule", until: target };

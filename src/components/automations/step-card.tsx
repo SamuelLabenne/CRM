@@ -21,7 +21,7 @@ import { StepPicker } from "./step-picker";
 /** Vertical line with a "+" button in the middle; picking a step type inserts it here. */
 export function Connector({ onInsert, className }: { onInsert: (type: StepType) => void; className?: string }) {
   return (
-    <div className={cn("flex flex-col items-center", className)} aria-hidden={false}>
+    <div className={cn("flex flex-col items-center", className)}>
       <div className="h-4 w-px bg-border" />
       <StepPicker onPick={onInsert}>
         <button

@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { STEP_GROUPS, STEP_META, STEP_TYPES, type StepType } from "@/lib/automations/meta";
 import { cn } from "@/lib/utils";
 import { STEP_ICONS, STEP_TONE } from "./icons";
@@ -22,7 +21,7 @@ export function StepPicker({
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>{children}</PopoverTrigger>
       <PopoverContent side={side} align="center" className="w-[min(22rem,calc(100vw-2rem))] gap-0 p-0">
-        <ScrollArea className="max-h-[min(26rem,60vh)]">
+        <div className="max-h-[min(26rem,60vh)] overflow-y-auto overscroll-contain">
           <div className="grid gap-3 p-2">
             {STEP_GROUPS.map((group) => (
               <div key={group} className="grid gap-0.5">
@@ -52,7 +51,7 @@ export function StepPicker({
               </div>
             ))}
           </div>
-        </ScrollArea>
+        </div>
       </PopoverContent>
     </Popover>
   );
