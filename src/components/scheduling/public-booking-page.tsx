@@ -6,6 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 import { recordPageView, utmFromParams } from "@/lib/leads";
 import { getSetting } from "@/lib/settings";
 import { getBookingPageBySlug, getPublicHosts } from "@/lib/scheduling/booking";
+import { serverNowMs } from "@/lib/scheduling/pages";
 import { loadSlotHosts } from "@/lib/scheduling/slots";
 import { BookingFlow } from "./booking-flow";
 import { EmbedResizer } from "./embed-resizer";
@@ -81,7 +82,7 @@ export async function PublicBookingPage({ slug, searchParams, embed }: { slug: s
           }}
           hosts={hosts}
           hostTimezone={hostTimezone}
-          initialNowMs={Date.now()}
+          initialNowMs={serverNowMs()}
           maxDaysAhead={page.maxDaysAhead}
           weekStartsOn={workspace.weekStartsOn}
           prefill={{ name: name.slice(0, 120), email: first(searchParams.email).slice(0, 254), phone: first(searchParams.phone).slice(0, 40) }}

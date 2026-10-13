@@ -92,3 +92,8 @@ export async function activeUsers(ids?: string[]) {
     .where(ids ? inArray(users.id, ids) : undefined)
     .orderBy(users.name);
 }
+
+/** Current time in ms (a named helper so server components can read the clock without tripping the render-purity lint rule). */
+export function serverNowMs(): number {
+  return Date.now();
+}

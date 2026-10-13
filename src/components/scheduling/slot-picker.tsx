@@ -101,9 +101,10 @@ export function SlotPicker({
   const [reloadTick, setReloadTick] = useState(0);
 
   useEffect(() => {
+    const inFlight = requested.current;
     const key = `${cacheKey}|${reloadTick}`;
-    if (requested.current.has(key)) return;
-    requested.current.add(key);
+    if (inFlight.has(key)) return;
+    inFlight.add(key);
     const { from, to } = monthRange(monthKey, tz);
     let cancelled = false;
     fetchSlots(from.toISOString(), to.toISOString())
@@ -116,7 +117,7 @@ export function SlotPicker({
       });
     return () => {
       cancelled = true;
-      requested.current.delete(key);
+      inFlight.delete(key);
     };
   }, [cacheKey, reloadTick, monthKey, tz, fetchSlots]);
 

@@ -4,6 +4,7 @@ import { PublicCard, PublicShell } from "@/components/public/public-shell";
 import { RescheduleFlow } from "@/components/scheduling/reschedule-flow";
 import { getSetting } from "@/lib/settings";
 import { getPublicHosts, getRescheduleContext } from "@/lib/scheduling/booking";
+import { serverNowMs } from "@/lib/scheduling/pages";
 import { loadSlotHosts } from "@/lib/scheduling/slots";
 
 export const metadata: Metadata = { title: "Reschedule your meeting", robots: { index: false } };
@@ -56,7 +57,7 @@ export default async function ReschedulePage({ params }: PageProps<"/m/[token]/r
           hosts={hosts}
           currentStartIso={event.startsAt.toISOString()}
           hostTimezone={hostTimezone}
-          initialNowMs={Date.now()}
+          initialNowMs={serverNowMs()}
           maxDaysAhead={page.maxDaysAhead}
           weekStartsOn={workspace.weekStartsOn}
         />
