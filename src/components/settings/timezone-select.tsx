@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { Check, ChevronsUpDown } from "lucide-react";
+import { ChevronsUpDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from "@/components/ui/command";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -101,7 +101,6 @@ export function TimezoneSelect({
                 >
                   <span className="truncate">{zone.replace(/_/g, " ")}</span>
                   <span className="ml-auto pl-2 text-xs text-muted-foreground">{offset}</span>
-                  {zone === value && <Check className="ml-1 size-4 shrink-0" />}
                 </CommandItem>
               ))}
             </CommandGroup>
