@@ -44,6 +44,12 @@ export type SettingsMap = {
   stages: Stage[];
   /** Last time background jobs were processed (used for opportunistic processing). */
   jobsHeartbeat: { at: string | null };
+  /**
+   * Ids of every row created by the sample-data loader, per table name ("contacts",
+   * "campaigns", "events", "booking_pages", "email_templates", "broadcasts", "automations",
+   * "tasks", "tags", "saved_views"). Used by deleteSampleData() (src/lib/sample-data-cleanup.ts).
+   */
+  sampleData: { ids: Record<string, string[]> };
 };
 
 export const DEFAULT_STAGES: Stage[] = [
@@ -76,6 +82,7 @@ export const DEFAULT_SETTINGS: SettingsMap = {
   },
   stages: DEFAULT_STAGES,
   jobsHeartbeat: { at: null },
+  sampleData: { ids: {} },
 };
 
 type Key = keyof SettingsMap;
