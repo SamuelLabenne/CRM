@@ -45,26 +45,25 @@ export function slotConfigOf(page: SlotPage): SlotConfig {
 }
 
 /** Active hosts of a page with their effective timezone (user tz → workspace tz → UTC). */
-export async function loadSlotHosts(hostIds: string[], tx: Tx = db): Promise<SlotHost[]> {
+export async function loadSlotHosts(hostIds: string[], tx: Tx = db, workspaceTimezone?: string): Promise<SlotHost[]> {
   if (!hostIds.length) return [];
-  const [workspace, rows] = await Promise.all([
-    getSetting("workspace"),
-    tx
-      .select({
-        id: users.id,
-        timezone: users.timezone,
-        availability: users.availability,
-        dateOverrides: users.dateOverrides,
-      })
-      .from(users)
-      .where(and(inArray(users.id, hostIds), isNull(users.deactivatedAt))),
-  ]);
+  // NB: inside a transaction pass `workspaceTimezone` – getSetting() uses the global connection.
+  const wsTz = workspaceTimezone ?? (await getSetting("workspace")).timezone;
+  const rows = await tx
+    .select({
+      id: users.id,
+      timezone: users.timezone,
+      availability: users.availability,
+      dateOverrides: users.dateOverrides,
+    })
+    .from(users)
+    .where(and(inArray(users.id, hostIds), isNull(users.deactivatedAt)));
   // keep the page's host order (it is the round-robin tie-break order)
   const order = new Map(hostIds.map((id, i) => [id, i]));
   return rows
     .map((u) => ({
       id: u.id,
-      timezone: resolveTimezone(u.timezone, workspace.timezone),
+      timezone: resolveTimezone(u.timezone, wsTz),
       availability: u.availability,
       dateOverrides: u.dateOverrides ?? [],
     }))
@@ -144,6 +143,8 @@ export type AvailabilityOptions = {
   to?: Date;
   /** Ignore this event when computing busy time (rescheduling a meeting). */
   excludeEventId?: string | null;
+  /** Workspace timezone (fallback for hosts without one). Required when running inside a transaction. */
+  workspaceTimezone?: string;
   tx?: Tx;
 };
 
@@ -152,7 +153,7 @@ export async function loadSlotInput(page: SlotPage, opts: AvailabilityOptions = 
   const now = opts.now ?? new Date();
   const from = opts.from ?? now;
   const to = opts.to ?? new Date(now.getTime() + (page.maxDaysAhead + 2) * DAY_MS);
-  const hosts = await loadSlotHosts(page.hostIds, opts.tx);
+  const hosts = await loadSlotHosts(page.hostIds, opts.tx, opts.workspaceTimezone);
   const busy = await loadBusyIntervals(
     hosts.map((h) => h.id),
     from,
