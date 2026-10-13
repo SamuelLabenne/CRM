@@ -11,6 +11,7 @@ import type {
   FilterGroup,
   FilterOperator,
   MeetingOutcome,
+  Stage,
   TriggerConfig,
   TriggerType,
 } from "@/lib/types";
@@ -512,4 +513,31 @@ export function validateAutomation(
 
 export function emptyFilterGroup(): FilterGroup {
   return { match: "all", filters: [] };
+}
+
+/** Serializable option lists for the builder UI. */
+export type BuilderLookups = {
+  timezone: string;
+  tags: { id: string; name: string; color: string }[];
+  stages: Stage[];
+  events: { id: string; title: string; startsAt: string; kind: "event" | "meeting" }[];
+  campaigns: { id: string; name: string }[];
+  bookingPages: { id: string; title: string }[];
+  templates: { id: string; name: string; subject: string; system: boolean }[];
+  users: { id: string; name: string }[];
+  customFields: { key: string; label: string }[];
+  views: { id: string; name: string }[];
+};
+
+/** Name maps for plain-English summaries. */
+export function toNameLookups(l: BuilderLookups): NameLookups {
+  return {
+    tags: Object.fromEntries(l.tags.map((t) => [t.id, t.name])),
+    stages: Object.fromEntries(l.stages.map((s) => [s.key, s.label])),
+    events: Object.fromEntries(l.events.map((e) => [e.id, e.title])),
+    campaigns: Object.fromEntries(l.campaigns.map((c) => [c.id, c.name])),
+    bookingPages: Object.fromEntries(l.bookingPages.map((p) => [p.id, p.title])),
+    templates: Object.fromEntries(l.templates.map((t) => [t.id, t.name])),
+    users: Object.fromEntries(l.users.map((u) => [u.id, u.name])),
+  };
 }
