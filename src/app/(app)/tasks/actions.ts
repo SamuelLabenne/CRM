@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { contacts, tasks, users } from "@/lib/db/schema";
 import { isAdmin, requireUser } from "@/lib/auth";
-import { fail, ok, zodFail } from "@/lib/action";
+import { fail, ok, zodFail, type ActionResult } from "@/lib/action";
 import { getWorkspace } from "@/lib/settings";
 import { completeTask, createTask, deleteTask, reopenTask, updateTask, zonedToUtc } from "@/lib/tasks";
 
@@ -37,28 +37,32 @@ function revalidateTasks(contactId?: string | null) {
   if (contactId) revalidatePath(`/contacts/${contactId}`);
 }
 
-async function parseTask(input: unknown) {
+type Parsed =
+  | { ok: false; result: ActionResult<never> }
+  | { ok: true; data: z.output<typeof taskSchema> & { dueAt: Date | null } };
+
+async function parseTask(input: unknown): Promise<Parsed> {
   const parsed = taskSchema.safeParse(input);
-  if (!parsed.success) return { error: zodFail(parsed.error) } as const;
+  if (!parsed.success) return { ok: false, result: zodFail(parsed.error) };
   const d = parsed.data;
   if (d.contactId) {
     const [c] = await db.select({ id: contacts.id }).from(contacts).where(eq(contacts.id, d.contactId));
-    if (!c) return { error: fail("Contact not found", { contactId: ["Contact not found"] }) } as const;
+    if (!c) return { ok: false, result: fail("Contact not found", { contactId: ["Contact not found"] }) };
   }
   if (d.assigneeId) {
     const [u] = await db.select({ id: users.id }).from(users).where(eq(users.id, d.assigneeId));
-    if (!u) return { error: fail("Assignee not found") } as const;
+    if (!u) return { ok: false, result: fail("Assignee not found") };
   }
-  if (d.dueTime && !d.dueDate) return { error: fail("Pick a due date for the time", { dueDate: ["Pick a date"] }) } as const;
+  if (d.dueTime && !d.dueDate) return { ok: false, result: fail("Pick a due date for the time", { dueDate: ["Pick a date"] }) };
   const tz = (await getWorkspace()).timezone;
   const dueAt = d.dueDate ? zonedToUtc(d.dueDate, d.dueTime || null, tz) : null;
-  return { data: { ...d, dueAt } } as const;
+  return { ok: true, data: { ...d, dueAt } };
 }
 
-export async function createTaskAction(input: TaskInput) {
+export async function createTaskAction(input: TaskInput): Promise<ActionResult<{ id: string }>> {
   const user = await requireUser();
   const p = await parseTask(input);
-  if ("error" in p) return p.error;
+  if (!p.ok) return p.result;
   const d = p.data;
   const task = await createTask(
     {
@@ -75,11 +79,11 @@ export async function createTaskAction(input: TaskInput) {
   return ok({ id: task.id }, "Task created");
 }
 
-export async function updateTaskAction(taskId: string, input: TaskInput) {
+export async function updateTaskAction(taskId: string, input: TaskInput): Promise<ActionResult> {
   const user = await requireUser();
   if (!uuid.safeParse(taskId).success) return fail("Task not found");
   const p = await parseTask(input);
-  if ("error" in p) return p.error;
+  if (!p.ok) return p.result;
   const d = p.data;
   const [before] = await db.select({ contactId: tasks.contactId }).from(tasks).where(eq(tasks.id, taskId));
   const task = await updateTask(
@@ -100,7 +104,7 @@ export async function updateTaskAction(taskId: string, input: TaskInput) {
   return ok(undefined, "Task saved");
 }
 
-export async function setTaskCompletedAction(taskId: string, completed: boolean) {
+export async function setTaskCompletedAction(taskId: string, completed: boolean): Promise<ActionResult> {
   const user = await requireUser();
   if (!uuid.safeParse(taskId).success) return fail("Task not found");
   const task = completed ? await completeTask(taskId, { actorId: user.id }) : await reopenTask(taskId);
@@ -109,7 +113,7 @@ export async function setTaskCompletedAction(taskId: string, completed: boolean)
   return ok(undefined, completed ? "Task completed" : "Task reopened");
 }
 
-export async function deleteTaskAction(taskId: string) {
+export async function deleteTaskAction(taskId: string): Promise<ActionResult> {
   const user = await requireUser();
   if (!uuid.safeParse(taskId).success) return fail("Task not found");
   const [t] = await db.select().from(tasks).where(eq(tasks.id, taskId));
