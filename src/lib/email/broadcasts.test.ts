@@ -139,7 +139,7 @@ describe("broadcast sending", () => {
     expect(msgs[0].contactId).toBe(attended.id);
     expect(msgs[0].subject).toBe("Thanks for joining Growth Workshop");
     expect(msgs[0].eventId).toBe(event.id);
-    expect(msgs[0].html).toContain("/m/");
+    expect(msgs[0].html).toContain("%2Fm%2F"); // attendee manage link (click-tracked, url-encoded)
   });
 
   it("is resumable: batches, re-enqueues itself and never double-sends", async () => {
