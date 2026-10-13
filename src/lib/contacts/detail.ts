@@ -25,6 +25,7 @@ export function toActivityDTO(a: typeof activities.$inferSelect, actorName: stri
     body: a.body,
     meta: a.meta ?? {},
     actorName,
+    actorId: a.actorId,
     eventId: a.eventId,
     createdAt: a.createdAt.toISOString(),
   };

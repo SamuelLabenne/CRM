@@ -9,6 +9,7 @@ export type ActivityDTO = {
   body: string | null;
   meta: Record<string, unknown>;
   actorName: string | null;
+  actorId: string | null;
   eventId: string | null;
   /** ISO timestamp */
   createdAt: string;
@@ -40,4 +41,30 @@ export type ContactRowDTO = {
   owner: UserDTO | null;
   lastActivity: string;
   created: string;
+};
+
+export type RegistrationDTO = {
+  attendeeId: string;
+  eventId: string;
+  title: string;
+  kind: "event" | "meeting";
+  eventStatus: string;
+  status: string;
+  rsvp: string | null;
+  outcome: string | null;
+  source: string;
+  /** Pre-formatted in the workspace timezone. */
+  when: string;
+  isPast: boolean;
+};
+
+export type MessageDTO = {
+  id: string;
+  subject: string;
+  kind: string;
+  status: string;
+  sent: string;
+  openCount: number;
+  clickCount: number;
+  error: string | null;
 };
