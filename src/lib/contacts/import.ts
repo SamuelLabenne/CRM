@@ -30,8 +30,9 @@ async function existingContactId(email: string | null, phone: string | null): Pr
     if (c) return c.id;
   }
   if (phone) {
-    const [c] = await db.select({ id: contacts.id }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
-    if (c) return c.id;
+    // Same rule as upsertContact: a phone match only counts when the emails can't disagree.
+    const [c] = await db.select({ id: contacts.id, email: contacts.email }).from(contacts).where(eq(contacts.phone, phone)).limit(1);
+    if (c && (!email || !c.email)) return c.id;
   }
   return null;
 }
