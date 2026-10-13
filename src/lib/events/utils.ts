@@ -150,3 +150,35 @@ export function bucketByDay(
   }
   return out;
 }
+
+/**
+ * "Tue, 21 Oct 2025, 6:00 – 7:00 pm GMT+8". Pass `tz` to format in a fixed zone (server render);
+ * omit it to use the browser's zone (client enhancement).
+ */
+export function formatEventRange(start: Date, end: Date, tz?: string, locale?: string): string {
+  const fmt = new Intl.DateTimeFormat(locale, {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+    ...(tz ? { timeZone: tz } : {}),
+  });
+  try {
+    return fmt.formatRange(start, end);
+  } catch {
+    return fmt.format(start);
+  }
+}
+
+/** Short month + day number of an instant, e.g. { month: "OCT", day: "21" }. */
+export function dateBlockParts(date: Date, tz?: string, locale?: string): { month: string; day: string; weekday: string } {
+  const opt = tz ? { timeZone: tz } : {};
+  return {
+    month: new Intl.DateTimeFormat(locale, { month: "short", ...opt }).format(date).toUpperCase(),
+    day: new Intl.DateTimeFormat(locale, { day: "numeric", ...opt }).format(date),
+    weekday: new Intl.DateTimeFormat(locale, { weekday: "short", ...opt }).format(date),
+  };
+}
