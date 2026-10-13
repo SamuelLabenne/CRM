@@ -1,4 +1,4 @@
-import { and, count, eq, gt, inArray, isNull, max, ne, sql } from "drizzle-orm";
+import { and, count, eq, gt, inArray, isNull, lt, max, ne } from "drizzle-orm";
 import { db, type Tx } from "@/lib/db";
 import { events, users, type BookingPage } from "@/lib/db/schema";
 import { getSetting } from "@/lib/settings";
@@ -87,7 +87,7 @@ export async function loadBusyIntervals(
         inArray(events.hostId, hostIds),
         ne(events.status, "cancelled"),
         gt(events.endsAt, new Date(from.getTime() - 2 * DAY_MS)),
-        sql`${events.startsAt} < ${new Date(to.getTime() + 2 * DAY_MS).toISOString()}`,
+        lt(events.startsAt, new Date(to.getTime() + 2 * DAY_MS)),
         opts.excludeEventId ? ne(events.id, opts.excludeEventId) : undefined,
       ),
     );
