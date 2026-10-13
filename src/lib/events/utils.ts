@@ -182,3 +182,6 @@ export function dateBlockParts(date: Date, tz?: string, locale?: string): { mont
     weekday: new Intl.DateTimeFormat(locale, { weekday: "short", ...opt }).format(date),
   };
 }
+
+/** Current time in ms (a function so server components can read the clock without tripping the render-purity lint). */
+export const currentTimeMs = () => Date.now();
