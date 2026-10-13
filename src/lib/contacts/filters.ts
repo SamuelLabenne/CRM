@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, ne, or, sql, type SQL } from "drizzle-orm";
+import { and, eq, inArray, isNull, ne, notInArray, or, sql, type SQL } from "drizzle-orm";
 import { contactTags, contacts, eventAttendees } from "@/lib/db/schema";
 import type { ContactFilter, FilterGroup } from "@/lib/types";
 
@@ -10,6 +10,7 @@ export const FILTERABLE_COLUMNS = {
   phone: contacts.phone,
   company: contacts.company,
   job_title: contacts.jobTitle,
+  website: contacts.website,
   city: contacts.city,
   country: contacts.country,
   stage: contacts.stage,
@@ -25,6 +26,18 @@ export const FILTERABLE_COLUMNS = {
 const DATE_FIELDS = new Set(["created_at", "last_activity_at"]);
 const NUMBER_FIELDS = new Set(["deal_value"]);
 
+/** ISO string for a user-supplied date, or null when it can't be parsed (never throws). */
+function toIsoDate(value: unknown): string | null {
+  if (value == null || value === "") return null;
+  const d = new Date(String(value));
+  return Number.isNaN(d.getTime()) ? null : d.toISOString();
+}
+
+/** Numeric value of a jsonb/text expression, or NULL when it isn't a number (avoids cast errors). */
+function safeNumeric(expr: SQL) {
+  return sql`(case when ${expr} ~ '^[[:space:]]*-?[0-9]+([.][0-9]+)?[[:space:]]*$' then (${expr})::numeric end)`;
+}
+
 function likeEscape(s: string) {
   return s.replace(/[\\%_]/g, (m) => `\\${m}`);
 }
@@ -36,7 +49,7 @@ function textCondition(expr: SQL | (typeof FILTERABLE_COLUMNS)[keyof typeof FILT
       return Array.isArray(f.value) ? inArray(expr as never, f.value) : sql`lower(${expr}::text) = lower(${v})`;
     case "is_not":
       return Array.isArray(f.value)
-        ? or(isNull(expr as never), sql`not (${expr}::text = any(${f.value}))`)
+        ? or(isNull(expr as never), notInArray(expr as never, f.value))
         : or(isNull(expr as never), sql`lower(${expr}::text) <> lower(${v})`);
     case "contains":
       return sql`${expr}::text ilike ${"%" + likeEscape(v) + "%"}`;
@@ -78,8 +91,20 @@ function conditionFor(f: ContactFilter): SQL | undefined {
   if (f.field.startsWith("custom:")) {
     const key = f.field.slice(7);
     const expr = sql`(${contacts.customFields} ->> ${key})`;
-    if (f.operator === "gt") return sql`(${expr})::numeric > ${Number(f.value)}`;
-    if (f.operator === "lt") return sql`(${expr})::numeric < ${Number(f.value)}`;
+    if (f.operator === "gt") return sql`${safeNumeric(expr)} > ${Number(f.value)}`;
+    if (f.operator === "lt") return sql`${safeNumeric(expr)} < ${Number(f.value)}`;
+    // Date custom fields are stored as ISO "yyyy-MM-dd" strings, which sort lexicographically.
+    if (f.operator === "before" || f.operator === "after") {
+      const iso = toIsoDate(f.value);
+      if (!iso) return undefined;
+      const day = iso.slice(0, 10);
+      return f.operator === "before" ? sql`${expr} < ${day}` : sql`${expr} > ${day}`;
+    }
+    if (f.operator === "in_last_days") {
+      const days = Number(f.value);
+      if (!Number.isFinite(days)) return undefined;
+      return sql`(${expr} >= to_char(now() - (${days} * interval '1 day'), 'YYYY-MM-DD') and ${expr} <= to_char(now(), 'YYYY-MM-DD'))`;
+    }
     return textCondition(expr, f);
   }
   const col = FILTERABLE_COLUMNS[f.field as keyof typeof FILTERABLE_COLUMNS];
@@ -87,10 +112,14 @@ function conditionFor(f: ContactFilter): SQL | undefined {
 
   if (DATE_FIELDS.has(f.field)) {
     switch (f.operator) {
-      case "before":
-        return f.value ? sql`${col} < ${new Date(String(f.value)).toISOString()}::timestamptz` : undefined;
-      case "after":
-        return f.value ? sql`${col} > ${new Date(String(f.value)).toISOString()}::timestamptz` : undefined;
+      case "before": {
+        const iso = toIsoDate(f.value);
+        return iso ? sql`${col} < ${iso}::timestamptz` : undefined;
+      }
+      case "after": {
+        const iso = toIsoDate(f.value);
+        return iso ? sql`${col} > ${iso}::timestamptz` : undefined;
+      }
       case "in_last_days":
         return sql`${col} > now() - (${Number(f.value) || 0} * interval '1 day')`;
       case "is_empty":
@@ -102,9 +131,11 @@ function conditionFor(f: ContactFilter): SQL | undefined {
     }
   }
   if (NUMBER_FIELDS.has(f.field)) {
-    if (f.operator === "gt") return sql`${col} > ${Number(f.value)}`;
-    if (f.operator === "lt") return sql`${col} < ${Number(f.value)}`;
-    if (f.operator === "is") return sql`${col} = ${Number(f.value)}`;
+    const n = Number(f.value);
+    if (f.operator === "gt") return Number.isFinite(n) ? sql`${col} > ${n}` : undefined;
+    if (f.operator === "lt") return Number.isFinite(n) ? sql`${col} < ${n}` : undefined;
+    if (f.operator === "is") return Number.isFinite(n) ? sql`${col} = ${n}` : undefined;
+    if (f.operator === "is_not") return Number.isFinite(n) ? or(isNull(col), sql`${col} <> ${n}`) : undefined;
   }
   return textCondition(col, f);
 }
