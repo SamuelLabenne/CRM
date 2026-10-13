@@ -29,13 +29,13 @@ export async function TemplatesTab({ q, category }: { q?: string; category?: str
     cat ? eq(emailTemplates.category, cat) : undefined,
     like ? or(ilike(emailTemplates.name, like), ilike(emailTemplates.subject, like)) : undefined,
   );
-  const [custom, system, usage, [{ n }]] = await Promise.all([
+  const [custom, system, usage, anyCustom] = await Promise.all([
     db.select().from(emailTemplates).where(and(base, isNull(emailTemplates.systemKey))).orderBy(desc(emailTemplates.updatedAt)),
     db.select().from(emailTemplates).where(and(base, isNotNull(emailTemplates.systemKey))).orderBy(asc(emailTemplates.name)),
     getTemplateUsage(),
-    db.select({ n: emailTemplates.id }).from(emailTemplates).where(isNull(emailTemplates.systemKey)).limit(1),
+    db.select({ id: emailTemplates.id }).from(emailTemplates).where(isNull(emailTemplates.systemKey)).limit(1),
   ]);
-  const hasAnyCustom = Boolean(n);
+  const hasAnyCustom = anyCustom.length > 0;
 
   return (
     <div className="grid gap-6">

@@ -134,7 +134,18 @@ export function BroadcastForm({
 
   const send = (schedule: string | null) => {
     startSave(async () => {
-      const res = await sendBroadcastAction({ broadcast: payload(), schedule });
+      // Persist a draft first so a failed send never leaves the form pointing at nothing (and never duplicates drafts).
+      let broadcastId = id;
+      if (!broadcastId) {
+        const saved = await saveBroadcastAction(payload());
+        if (!saved.ok) {
+          toast.error(saved.error);
+          return;
+        }
+        broadcastId = saved.data!.id;
+        setId(broadcastId);
+      }
+      const res = await sendBroadcastAction({ broadcast: { ...payload(), id: broadcastId }, schedule });
       if (!res.ok) {
         toast.error(res.error);
         return;
