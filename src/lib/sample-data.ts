@@ -690,6 +690,22 @@ export async function loadSampleData(ownerId: string): Promise<void> {
   await db.execute(sql`
     update event_attendees set registered_at = events.starts_at - (random() * interval '6 days') - interval '1 day'
     from events where events.id = event_attendees.event_id and events.kind = 'meeting' and event_attendees.event_id in ${eids}`);
+  // Most sign-ups came through the public pages (funnel analytics): mark them as such and
+  // record the matching completed lead captures.
+  const publicEvents = list([masterclass.id, workshop.id, launchWebinar.id, breakfast.id, appreciationNight.id]);
+  await db.execute(sql`update event_attendees set source = 'public' where event_id in ${publicEvents} and random() < 0.8`);
+  await db.execute(sql`
+    update event_attendees set source = 'booking'
+    from events where events.id = event_attendees.event_id and events.kind = 'meeting' and event_attendees.event_id in ${eids}`);
+  await db.execute(sql`
+    insert into lead_captures (contact_id, kind, target_id, status, answers, completed_at, created_at, updated_at)
+    select event_attendees.contact_id,
+           case when events.kind = 'meeting' then 'booking' else 'registration' end,
+           coalesce(events.booking_page_id, events.id),
+           'completed', event_attendees.answers, event_attendees.registered_at,
+           event_attendees.registered_at - interval '3 minutes', event_attendees.registered_at
+    from event_attendees join events on events.id = event_attendees.event_id
+    where event_attendees.source in ('public', 'booking') and event_attendees.event_id in ${eids}`);
   await db.execute(sql`
     update activities set created_at = contacts.created_at
     from contacts where contacts.id = activities.contact_id and activities.type = 'contact_created' and activities.contact_id in ${cids}`);

@@ -140,7 +140,7 @@ export function EmailEditor({ value, onChange, placeholder = "Write your emailâ€
 
   return (
     <div
-      className={cn("email-editor overflow-hidden rounded-lg border bg-card focus-within:ring-3 focus-within:ring-ring/30", className)}
+      className={cn("email-editor overflow-clip rounded-lg border bg-card focus-within:ring-3 focus-within:ring-ring/30", className)}
       style={{ "--email-brand": brandColor, "--email-editor-min-height": `${minHeight}px` } as React.CSSProperties}
     >
       <Toolbar editor={editor} onInsertText={insertText} onOpenDialog={setDialog} />

@@ -34,3 +34,6 @@ export default async function InvitePage({ params }: PageProps<"/invite/[token]"
     </div>
   );
 }
+
+// Depends on the database and the session on every request.
+export const dynamic = "force-dynamic";

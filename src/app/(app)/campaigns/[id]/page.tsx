@@ -178,8 +178,9 @@ function EventsCard({ rows, tz, campaignId, full }: { rows: EventRows; tz: strin
                   </TableCell>
                 )}
                 <TableCell className="text-right tabular-nums">
-                  {stats.nonCancelled}
+                  {stats.seatsTaken}
                   {event.capacity ? <span className="text-muted-foreground"> / {event.capacity}</span> : null}
+                  {stats.waitlisted > 0 && <div className="text-xs text-amber-600">+{stats.waitlisted} waitlist</div>}
                 </TableCell>
                 <TableCell className="pr-5 text-right tabular-nums">{formatPercent(stats.showUpRate)}</TableCell>
               </TableRow>

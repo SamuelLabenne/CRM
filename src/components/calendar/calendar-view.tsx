@@ -230,7 +230,8 @@ export function CalendarView({
             noEventsText="Nothing scheduled in this range"
             events={fetchEvents}
             eventContent={renderEventContent}
-            loading={setLoading}
+            // FullCalendar calls this synchronously during its own render → defer the state update.
+            loading={(isLoading: boolean) => queueMicrotask(() => setLoading(isLoading))}
             eventSourceFailure={(err: unknown) => toast.error(err instanceof Error ? err.message : "Could not load calendar events.")}
             eventClick={(info) => {
               const props = info.event.extendedProps as CalendarEventProps;

@@ -166,10 +166,13 @@ export function formatEventRange(start: Date, end: Date, tz?: string, locale?: s
     timeZoneName: "short",
     ...(tz ? { timeZone: tz } : {}),
   });
+  // Node and browsers disagree on narrow/no-break spaces in ICU output → normalise so
+  // server-rendered and hydrated text match.
+  const clean = (v: string) => v.replace(/[\u202f\u00a0\u2009]/g, " ");
   try {
-    return fmt.formatRange(start, end);
+    return clean(fmt.formatRange(start, end));
   } catch {
-    return fmt.format(start);
+    return clean(fmt.format(start));
   }
 }
 

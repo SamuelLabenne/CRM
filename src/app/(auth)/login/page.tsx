@@ -20,3 +20,6 @@ export default async function LoginPage({ searchParams }: PageProps<"/login">) {
     </div>
   );
 }
+
+// Depends on the database and the session on every request.
+export const dynamic = "force-dynamic";

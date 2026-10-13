@@ -27,11 +27,14 @@ function create(): DB {
     });
     return drizzlePostgres(client, { schema });
   }
-  const configured = process.env.PGLITE_DIR ?? ".data/pglite";
+  // During `next build` several workers may load this module at once; never share the on-disk
+  // dev database with them (production builds use DATABASE_URL anyway).
+  const configured =
+    process.env.NEXT_PHASE === "phase-production-build" ? "memory://" : (process.env.PGLITE_DIR ?? ".data/pglite");
   if (configured.startsWith("memory://")) {
     holder.pglite = new PGlite(configured); // tests
   } else {
-    const dir = path.resolve(configured);
+    const dir = path.resolve(/*turbopackIgnore: true*/ configured);
     mkdirSync(path.dirname(dir), { recursive: true });
     holder.pglite = new PGlite(dir);
   }
