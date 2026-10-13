@@ -27,9 +27,14 @@ function create(): DB {
     });
     return drizzlePostgres(client, { schema });
   }
-  const dir = path.resolve(process.env.PGLITE_DIR ?? ".data/pglite");
-  mkdirSync(path.dirname(dir), { recursive: true });
-  holder.pglite = new PGlite(dir);
+  const configured = process.env.PGLITE_DIR ?? ".data/pglite";
+  if (configured.startsWith("memory://")) {
+    holder.pglite = new PGlite(configured); // tests
+  } else {
+    const dir = path.resolve(configured);
+    mkdirSync(path.dirname(dir), { recursive: true });
+    holder.pglite = new PGlite(dir);
+  }
   return drizzlePglite(holder.pglite, { schema }) as unknown as DB;
 }
 

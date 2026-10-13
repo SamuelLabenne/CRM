@@ -90,6 +90,20 @@ Background work goes through the `jobs` table: register handlers in your module'
 `*JobHandlers` map (see `src/lib/jobs/handlers.ts`). Jobs run every minute via `/api/cron`
 (production), on a 20s timer in local dev, and right after requests that call `kickJobs()`.
 
+## Testing
+
+Unit/integration tests use vitest with an **in-memory Postgres** per test file:
+
+```ts
+import { setupTestDb, createTestUser } from "@/test/setup-db";
+const { db } = await setupTestDb();                 // migrations + system templates applied
+const { registerForEvent } = await import("@/lib/events/registration"); // import app code AFTER setup
+```
+
+See `src/lib/events/registration.test.ts` for a full example (register → jobs → `processDueJobs()` →
+simulated email in `messages`). Write tests for engines/pure logic (slots, automations, broadcasts,
+filters, CSV mapping). `next/cache` and `server-only` are mocked in `vitest.config.mts`.
+
 ## Database changes
 
 `src/lib/db/schema.ts` is shared. Avoid schema changes; if you truly need one, make the minimal
