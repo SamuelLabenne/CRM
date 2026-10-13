@@ -156,7 +156,7 @@ export async function seedWorld() {
       .values({ toEmail: "x@example.com", fromEmail: "hello@example.com", subject: "s", html: "<p>x</p>", status: "simulated", kind: "notification", ...over })
       .returning();
   const [m_1] = await mk({ createdAt: d("2026-10-02"), openedAt: d("2026-10-02"), templateId: t1.id });
-  const [m_2] = await mk({ createdAt: d("2026-10-03"), status: "sent", kind: "broadcast", broadcastId: b1.id, openedAt: d("2026-10-03"), clickedAt: d("2026-10-03") });
+  await mk({ createdAt: d("2026-10-03"), status: "sent", kind: "broadcast", broadcastId: b1.id, openedAt: d("2026-10-03"), clickedAt: d("2026-10-03") });
   const [m_3] = await mk({ createdAt: d("2026-10-04"), kind: "automation", templateId: t2.id });
   await mk({ createdAt: d("2026-10-12"), status: "failed", templateId: t1.id, error: "boom" });
   await mk({ createdAt: d("2026-10-05"), kind: "test" });

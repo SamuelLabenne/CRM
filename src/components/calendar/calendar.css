@@ -1,0 +1,77 @@
+/*
+ * FullCalendar (v7) theme glue. We use the "classic" theme plugin for structure and map its
+ * palette variables onto the app's shadcn tokens, so light/dark mode follow the app theme.
+ * Everything is scoped to .relay-calendar.
+ */
+.relay-calendar {
+  --fc-classic-primary: var(--primary);
+  --fc-classic-primary-foreground: var(--primary-foreground);
+  --fc-classic-event: var(--primary);
+  --fc-classic-event-contrast: var(--primary-foreground);
+  --fc-classic-background-event: var(--chart-2);
+  --fc-classic-background-event-opacity: 15%;
+  --fc-classic-background-event-foreground-opacity: 50%;
+  --fc-classic-highlight: color-mix(in oklab, var(--primary) 14%, transparent);
+  --fc-classic-today: color-mix(in oklab, var(--primary) 7%, transparent);
+  --fc-classic-now: var(--destructive);
+  --fc-classic-small-dot-width: 8px;
+  --fc-classic-large-dot-width: 10px;
+
+  --fc-classic-background: var(--background);
+  --fc-classic-faint: color-mix(in oklab, var(--foreground) 3%, transparent);
+  --fc-classic-muted: color-mix(in oklab, var(--foreground) 7%, transparent);
+  --fc-classic-strong: color-mix(in oklab, var(--foreground) 13%, transparent);
+
+  --fc-classic-foreground: var(--foreground);
+  --fc-classic-faint-foreground: color-mix(in oklab, var(--muted-foreground) 65%, transparent);
+  --fc-classic-muted-foreground: var(--muted-foreground);
+
+  --fc-classic-border: var(--border);
+  --fc-classic-strong-border: color-mix(in oklab, var(--border), var(--foreground) 18%);
+
+  --fc-classic-button: var(--secondary);
+  --fc-classic-button-border: var(--border);
+  --fc-classic-button-strong: var(--accent);
+  --fc-classic-button-strong-border: var(--border);
+  --fc-classic-button-outline: color-mix(in oklab, var(--ring) 50%, transparent);
+  --fc-classic-button-foreground: var(--foreground);
+
+  font-family: inherit;
+  color: var(--foreground);
+}
+
+/* Calendar surface: the wrapper draws the border so the inner view is borderless. */
+.relay-calendar [class*="fc-classic-"] {
+  font-family: inherit;
+}
+
+/* Event states */
+.relay-calendar .relay-fc-draft {
+  opacity: 0.8;
+  outline: 1px dashed color-mix(in oklab, var(--foreground) 45%, transparent);
+  outline-offset: -1px;
+}
+.relay-calendar .relay-fc-cancelled {
+  opacity: 0.5;
+  text-decoration: line-through;
+}
+.relay-calendar .relay-fc-past {
+  opacity: 0.72;
+}
+.relay-calendar .relay-fc-campaign {
+  font-weight: 600;
+}
+.relay-calendar .relay-fc-campaign:hover {
+  filter: saturate(1.15) brightness(0.98);
+}
+
+/* Slightly rounder, easier-to-grab events */
+.relay-calendar [data-fc-event],
+.relay-calendar .fc-event {
+  border-radius: 6px;
+}
+
+/* Keep FullCalendar popovers above the app header */
+.relay-calendar {
+  --fc-popover-z: 40;
+}

@@ -162,7 +162,7 @@ describe("workspace with data", () => {
 
   it("returns recent activity with contact names and top campaigns by registrations", async () => {
     const act = await dash.getRecentActivity(10);
-    expect(act.map((a) => a.title)).toEqual(["Called back", "System thing", "Registered for “Spring Webinar”"].sort((a, b) => 0));
+    expect(act.map((a) => a.title)).toEqual(["Called back", "System thing", "Registered for “Spring Webinar”"]);
     expect(act[0].contactName).toBe("Bob Test");
     expect(act.find((a) => a.title === "System thing")?.contactName).toBeNull();
 
