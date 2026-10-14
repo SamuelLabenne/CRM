@@ -36,6 +36,14 @@ export type EmailSettings = {
   } | null;
   /** Add open-pixel & click tracking to emails. */
   tracking: boolean;
+  /**
+   * Test mode: real delivery only to team members and `testRecipients`; every other email is
+   * simulated (logged in the outbox). Protects real contacts while trying things out.
+   */
+  testMode: boolean;
+  testRecipients: string[];
+  /** Max emails delivered through the provider per rolling 24h (null = unlimited). */
+  dailyLimit: number | null;
 };
 
 export type SettingsMap = {
@@ -81,6 +89,9 @@ export const DEFAULT_SETTINGS: SettingsMap = {
     resendApiKey: null,
     smtp: null,
     tracking: true,
+    testMode: process.env.EMAIL_TEST_MODE === "1",
+    testRecipients: [],
+    dailyLimit: process.env.EMAIL_DAILY_LIMIT ? Number(process.env.EMAIL_DAILY_LIMIT) || null : null,
   },
   stages: DEFAULT_STAGES,
   jobsHeartbeat: { at: null },

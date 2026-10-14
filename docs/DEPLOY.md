@@ -13,7 +13,9 @@ this project is **Vercel** (app, region `syd1`) + **Supabase** (Postgres, `ap-so
 | `SETUP_CODE` | recommended | Required on the first-run `/setup` page so only you can claim the workspace. Unused after setup. |
 | `APP_URL` | optional | Public base URL used in emails (defaults to the Vercel production URL). Set it when you add a custom domain. |
 | `RESEND_API_KEY` | optional | Resend key. When set, Resend is the default sending method (a key saved in Settings → Email sending takes precedence). |
-| `EMAIL_FROM` | with Resend | Default sender address on a domain verified in Resend (e.g. `hello@ksaraevents.com`). Used at setup; editable in Settings. |
+| `EMAIL_FROM` | with Resend | Default sender address (must be on a domain verified in Resend, or Resend's shared `onboarding@resend.dev` for testing). Used at setup; editable in Settings. |
+| `EMAIL_TEST_MODE` | optional | `1` = test mode on by default: only team members and listed test recipients get real email, the rest is simulated. Toggle in Settings → Email sending. |
+| `EMAIL_DAILY_LIMIT` | optional | Default cap on real emails per rolling 24 h (protects a shared free-plan quota). Editable in Settings. |
 | `RESEND_WEBHOOK_SECRET` | with Resend | Signing secret of the Resend webhook pointing at `/api/webhooks/resend` (events: bounced, complained, failed, suppressed). Hard bounces and spam complaints stop further email to that contact. |
 
 ## Database migrations
@@ -45,8 +47,18 @@ $$);
 
 ## Email sending
 
-**Production is connected to Resend** (domain `ksaraevents.com`, API key `relay-crm-production`,
-webhook → `/api/webhooks/resend`). Without `RESEND_API_KEY`, emails are **simulated** (visible in Emails → Outbox, nothing leaves the
+**Current production setup (testing):** Resend with the shared test sender
+`onboarding@resend.dev` (API key `relay-crm-testing`), **test mode on** and a **50 emails/day cap**,
+so the CRM never uses the `ksaraevents.com` domain (a separate live site) and always leaves at least
+half of the account's free 100/day quota for it. Resend only delivers mail from `onboarding@resend.dev`
+to the email address of the Resend account owner – use that address for your CRM login while testing.
+
+**Before going live:** use a domain for the CRM itself (e.g. `mail.yourbrand.com`), add it in
+Resend → Domains (the free plan allows 3 domains), publish the SPF/DKIM records, then set the sender
+in Settings → Email sending, turn test mode off and raise/clear the daily limit. Consider a separate
+Resend account or a paid plan so the CRM and other sites don't share one quota.
+
+Without `RESEND_API_KEY`, emails are **simulated** (visible in Emails → Outbox, nothing leaves the
 app). To send for real go to **Settings → Email sending** and choose:
 
 - **Resend** – create an API key at resend.com and verify your sending domain (SPF/DKIM DNS

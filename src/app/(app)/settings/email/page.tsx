@@ -21,6 +21,9 @@ export default async function EmailSettingsPage() {
             fromEmail: cfg.fromEmail,
             replyTo: cfg.replyTo ?? "",
             tracking: cfg.tracking,
+            testMode: cfg.testMode,
+            testRecipients: cfg.testRecipients.join(", "),
+            dailyLimit: cfg.dailyLimit == null ? "" : String(cfg.dailyLimit),
             smtp: { host: cfg.smtp?.host ?? "", port: cfg.smtp?.port ?? 587, secure: cfg.smtp?.secure ?? false, user: cfg.smtp?.user ?? "" },
           }}
           resendKeySaved={!!cfg.resendApiKey}

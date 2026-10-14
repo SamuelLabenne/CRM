@@ -27,6 +27,22 @@ export const KIND_LABEL: Record<string, string> = {
 /** Banner explaining simulated sending, shown on the outbox list and detail pages. */
 export async function OutboxModeBanner() {
   const email = await getSetting("email");
+  if (email.provider !== "outbox" && email.testMode) {
+    return (
+      <Alert>
+        <Info />
+        <AlertTitle>Test mode is on</AlertTitle>
+        <AlertDescription>
+          Only team members{email.testRecipients.length ? " and your test recipients" : ""} receive real email; everything else is logged here as
+          simulated.{" "}
+          <Link href="/settings/email" className="font-medium text-foreground underline underline-offset-4">
+            Turn off test mode in Settings → Email
+          </Link>{" "}
+          when you go live.
+        </AlertDescription>
+      </Alert>
+    );
+  }
   if (email.provider !== "outbox") return null;
   return (
     <Alert>

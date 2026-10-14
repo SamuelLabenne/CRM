@@ -22,6 +22,11 @@ const emailSchema = z.object({
   fromEmail: z.string().trim().toLowerCase().email("Enter a valid sender email"),
   replyTo: optionalEmail,
   tracking: z.boolean(),
+  testMode: z.boolean().default(false),
+  /** Comma/newline separated extra addresses that receive real email in test mode. */
+  testRecipients: z.string().max(5000).default(""),
+  /** Blank = unlimited. */
+  dailyLimit: z.union([z.literal(""), z.coerce.number().int("Enter a whole number").min(1, "Use at least 1").max(100000)]).default(""),
   /** Blank = keep the stored key. */
   resendApiKey: z.string().trim().max(300).default(""),
   smtp: z.object({
@@ -50,6 +55,9 @@ export async function saveEmailSettingsAction(input: EmailSettingsInput): Promis
   if (d.provider === "smtp" && !d.smtp.host) {
     return fail("Enter your SMTP host.", { "smtp.host": ["Enter your SMTP host"] });
   }
+  const testRecipients = [...new Set(d.testRecipients.split(/[\s,;]+/).map((e) => e.trim().toLowerCase()).filter(Boolean))];
+  const badRecipient = testRecipients.find((e) => !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(e));
+  if (badRecipient) return fail(`“${badRecipient}” is not a valid email address.`, { testRecipients: ["Check the test recipients"] });
   const smtp = d.smtp.host
     ? {
         host: d.smtp.host,
@@ -66,6 +74,9 @@ export async function saveEmailSettingsAction(input: EmailSettingsInput): Promis
     fromEmail: d.fromEmail,
     replyTo: d.replyTo || null,
     tracking: d.tracking,
+    testMode: d.testMode,
+    testRecipients,
+    dailyLimit: d.dailyLimit === "" ? null : d.dailyLimit,
     resendApiKey,
     smtp,
   });

@@ -160,7 +160,8 @@ export async function loadSampleData(ownerId: string): Promise<void> {
     const last = pick(LAST);
     const company = chance(0.85) ? pick(COMPANIES) : null;
     const [city, country] = pick(CITIES);
-    const domain = company ? company.toLowerCase().replace(/[^a-z]+/g, "") + ".com.au" : "example.com";
+    // RFC 2606 reserved TLD: demo addresses can never reach a real inbox.
+    const domain = (company ? company.toLowerCase().replace(/[^a-z]+/g, "") : "mail") + ".example";
     const stage = pickStage();
     const { contact } = await upsertContact(
       {

@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Spinner } from "@/components/ui/spinner";
 import { Switch } from "@/components/ui/switch";
+import { Textarea } from "@/components/ui/textarea";
 import { FieldErrors } from "@/components/settings/field-error";
 import { SecretInput } from "@/components/settings/secret-input";
 import { SettingsCard } from "@/components/settings/settings-card";
@@ -23,6 +24,9 @@ type Initial = {
   fromEmail: string;
   replyTo: string;
   tracking: boolean;
+  testMode: boolean;
+  testRecipients: string;
+  dailyLimit: string;
   smtp: { host: string; port: number; secure: boolean; user: string };
 };
 
@@ -48,6 +52,9 @@ export function EmailSettingsForm({
   const [fromEmail, setFromEmail] = useState(initial.fromEmail);
   const [replyTo, setReplyTo] = useState(initial.replyTo);
   const [tracking, setTracking] = useState(initial.tracking);
+  const [testMode, setTestMode] = useState(initial.testMode);
+  const [testRecipients, setTestRecipients] = useState(initial.testRecipients);
+  const [dailyLimit, setDailyLimit] = useState(initial.dailyLimit);
   const [resendKey, setResendKey] = useState("");
   const [smtp, setSmtp] = useState({ ...initial.smtp, password: "" });
   const { run, pending, fieldErrors } = useRunAction();
@@ -55,7 +62,7 @@ export function EmailSettingsForm({
   function submit(e: React.FormEvent) {
     e.preventDefault();
     run(
-      () => saveEmailSettingsAction({ provider, fromName, fromEmail, replyTo, tracking, resendApiKey: resendKey, smtp }),
+      () => saveEmailSettingsAction({ provider, fromName, fromEmail, replyTo, tracking, testMode, testRecipients, dailyLimit, resendApiKey: resendKey, smtp }),
       { onSuccess: () => (setResendKey(""), setSmtp((s) => ({ ...s, password: "" }))) },
     );
   }
@@ -177,6 +184,50 @@ export function EmailSettingsForm({
             <AlertDescription>This From address isn&apos;t on a domain you own. Real providers will reject or spam-folder these emails.</AlertDescription>
           </Alert>
         )}
+      </SettingsCard>
+
+      <SettingsCard title="Test mode & limits" description="Safety nets while you try Relay out with real email.">
+        <div className="grid gap-5">
+          <label className="flex items-start gap-3 text-sm">
+            <Switch checked={testMode} onCheckedChange={setTestMode} className="mt-0.5" />
+            <span className="grid gap-0.5">
+              <span className="font-medium">Test mode</span>
+              <span className="text-muted-foreground">
+                Only team members and the addresses below receive real email. Everything else (sample contacts, real leads) is logged in the
+                Outbox instead of being delivered. Turn this off when you go live.
+              </span>
+            </span>
+          </label>
+          {testMode && (
+            <div className="grid gap-1.5">
+              <Label htmlFor="test-recipients">Extra test recipients</Label>
+              <Textarea
+                id="test-recipients"
+                rows={2}
+                value={testRecipients}
+                onChange={(e) => setTestRecipients(e.target.value)}
+                placeholder="friend@example.com, colleague@example.com"
+                aria-invalid={!!fieldErrors.testRecipients}
+              />
+              <FieldErrors errors={fieldErrors.testRecipients} />
+            </div>
+          )}
+          <div className="grid max-w-xs gap-1.5">
+            <Label htmlFor="daily-limit">Daily sending limit</Label>
+            <Input
+              id="daily-limit"
+              type="number"
+              min={1}
+              inputMode="numeric"
+              value={dailyLimit}
+              onChange={(e) => setDailyLimit(e.target.value)}
+              placeholder="Unlimited"
+              aria-invalid={!!fieldErrors.dailyLimit}
+            />
+            <FieldErrors errors={fieldErrors.dailyLimit} />
+            <p className="text-xs text-muted-foreground">Emails above this many per 24 hours are logged in the Outbox instead of sent. Useful on free plans with a shared quota.</p>
+          </div>
+        </div>
       </SettingsCard>
 
       <SettingsCard title="Tracking">

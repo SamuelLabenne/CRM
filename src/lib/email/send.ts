@@ -1,7 +1,7 @@
-import { eq } from "drizzle-orm";
+import { and, eq, gt, inArray, isNull, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { messages, type Contact } from "@/lib/db/schema";
-import { getSetting } from "@/lib/settings";
+import { messages, users, type Contact } from "@/lib/db/schema";
+import { getSetting, type EmailSettings } from "@/lib/settings";
 import { logActivity } from "@/lib/activity";
 import { fullName } from "@/lib/format";
 import { absoluteUrl, trackClickPath, trackOpenPath } from "@/lib/urls";
@@ -60,6 +60,31 @@ function addTracking(html: string, messageId: string): string {
   });
   const pixel = `<img src="${absoluteUrl(trackOpenPath(messageId))}" width="1" height="1" alt="" style="display:block;width:1px;height:1px;border:0;opacity:0;">`;
   return withLinks.includes("</body>") ? withLinks.replace("</body>", `${pixel}</body>`) : withLinks + pixel;
+}
+
+/**
+ * Safety gate before real delivery. Returns a reason when the email must be simulated instead:
+ * test mode (recipient is not a team member / test recipient) or the daily sending cap.
+ */
+export async function deliveryBlockReason(toEmail: string, cfg: EmailSettings): Promise<string | null> {
+  if (cfg.provider === "outbox") return null;
+  const to = toEmail.trim().toLowerCase();
+  if (cfg.testMode) {
+    const allowed = new Set(cfg.testRecipients.map((e) => e.trim().toLowerCase()));
+    if (!allowed.has(to)) {
+      const team = await db.select({ email: users.email }).from(users).where(isNull(users.deactivatedAt));
+      for (const u of team) allowed.add(u.email.toLowerCase());
+    }
+    if (!allowed.has(to)) return "Test mode: not delivered (only team members and test recipients receive real email)";
+  }
+  if (cfg.dailyLimit != null) {
+    const [row] = await db
+      .select({ n: sql<number>`count(*)::int` })
+      .from(messages)
+      .where(and(eq(messages.status, "sent"), inArray(messages.provider, ["resend", "smtp"]), gt(messages.sentAt, new Date(Date.now() - 864e5))));
+    if ((row?.n ?? 0) >= cfg.dailyLimit) return `Daily sending limit reached (${cfg.dailyLimit} per 24 hours): not delivered`;
+  }
+  return null;
 }
 
 /**
@@ -138,18 +163,21 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     headers["List-Unsubscribe-Post"] = "List-Unsubscribe=One-Click";
   }
 
-  const result = await deliver(
-    {
-      from: formatFrom(emailCfg.fromName, emailCfg.fromEmail),
-      to: toEmail,
-      replyTo: emailCfg.replyTo,
-      subject,
-      html,
-      text,
-      headers,
-    },
-    emailCfg,
-  );
+  const blocked = await deliveryBlockReason(toEmail, emailCfg);
+  const result = blocked
+    ? ({ status: "simulated", provider: "outbox", providerMessageId: null } as const)
+    : await deliver(
+        {
+          from: formatFrom(emailCfg.fromName, emailCfg.fromEmail),
+          to: toEmail,
+          replyTo: emailCfg.replyTo,
+          subject,
+          html,
+          text,
+          headers,
+        },
+        emailCfg,
+      );
 
   await db
     .update(messages)
@@ -158,7 +186,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
       status: result.status,
       provider: result.provider,
       providerMessageId: result.status === "sent" ? result.providerMessageId : null,
-      error: result.status === "failed" ? result.error : null,
+      error: result.status === "failed" ? result.error : blocked,
       sentAt: result.status === "failed" ? null : new Date(),
     })
     .where(eq(messages.id, msg.id));
