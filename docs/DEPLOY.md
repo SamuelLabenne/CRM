@@ -7,7 +7,7 @@ this project is **Vercel** (app, region `syd1`) + **Supabase** (Postgres, `ap-so
 
 | Name | Required | Purpose |
 |---|---|---|
-| `DATABASE_URL` | yes (prod) | Postgres connection string. On Supabase use the **transaction pooler** (port 6543). Without it the app uses an embedded PGlite database in `.data/` (local dev only). |
+| `DATABASE_URL` | yes (prod) | Postgres connection string. On Supabase use the **session pooler** (`…pooler.supabase.com:5432`) – the transaction pooler (port 6543) hangs when the driver pipelines parallel queries. Without it the app uses an embedded PGlite database in `.data/` (local dev only). |
 | `APP_SECRET` | yes (prod) | ≥ 32 random characters. Signs sessions & links, encrypts stored API keys/SMTP passwords. Never change it after launch (stored secrets become unreadable). |
 | `CRON_SECRET` | yes (prod) | Protects `/api/cron` (the background job runner). |
 | `SETUP_CODE` | recommended | Required on the first-run `/setup` page so only you can claim the workspace. Unused after setup. |

@@ -19,8 +19,13 @@ export const usingPglite = !process.env.DATABASE_URL;
 
 function create(): DB {
   if (process.env.DATABASE_URL) {
+    // Use Supabase's SESSION pooler (port 5432) or a direct connection. The transaction pooler
+    // (port 6543) hangs when postgres.js pipelines several queries on one connection, which
+    // happens on pages that run many queries in parallel (e.g. the dashboard).
+    if (/:6543\//.test(process.env.DATABASE_URL)) {
+      console.warn("[db] DATABASE_URL points at a transaction pooler (port 6543); use the session pooler (5432) instead.");
+    }
     const client = postgres(process.env.DATABASE_URL, {
-      // Supabase transaction pooler (port 6543) does not support prepared statements.
       prepare: false,
       max: Number(process.env.DATABASE_POOL_MAX ?? 5),
       idle_timeout: 20,
