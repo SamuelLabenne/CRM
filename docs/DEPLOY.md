@@ -18,6 +18,10 @@ this project is **Vercel** (app, region `syd1`) + **Supabase** (Postgres, `ap-so
 | `EMAIL_DAILY_LIMIT` | optional | Default cap on real emails per rolling 24 h (protects a shared free-plan quota). Editable in Settings. |
 | `RESEND_WEBHOOK_SECRET` | with Resend | Signing secret of the Resend webhook pointing at `/api/webhooks/resend` (events: bounced, complained, failed, suppressed). Hard bounces and spam complaints stop further email to that contact. |
 
+Database role settings used in production (run once as the `postgres` user):
+`alter role relay_app set idle_session_timeout = '20s'; alter role relay_app set idle_in_transaction_session_timeout = '30s'; alter role relay_app set statement_timeout = '30s';`
+They stop frozen serverless instances from holding the pooler's 15 session connections.
+
 ## Database migrations
 
 Migrations live in `./drizzle` and are generated from `src/lib/db/schema.ts` with

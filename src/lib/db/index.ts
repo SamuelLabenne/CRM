@@ -27,8 +27,13 @@ function create(): DB {
     }
     const client = postgres(process.env.DATABASE_URL, {
       prepare: false,
-      max: Number(process.env.DATABASE_POOL_MAX ?? 5),
-      idle_timeout: 20,
+      // Serverless: many short-lived instances share a small pooler (Supabase free: 15 session
+      // connections), and frozen instances can't close their sockets. Keep each instance's pool
+      // tiny (queries pipeline over it) and release idle connections fast. The database role also
+      // has idle_session_timeout = 20s as a backstop.
+      max: Number(process.env.DATABASE_POOL_MAX ?? 2),
+      idle_timeout: 5,
+      max_lifetime: 120,
     });
     return drizzlePostgres(client, { schema });
   }
