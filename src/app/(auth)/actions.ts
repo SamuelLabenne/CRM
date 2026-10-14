@@ -68,7 +68,8 @@ export async function setupAction(_prev: ActionResult | null, form: FormData): P
     .values({ email: d.email, name: d.name, passwordHash: await hashPassword(d.password), role: "owner", timezone: tz })
     .returning();
   await setSetting("workspace", { name: d.workspaceName, timezone: tz });
-  await setSetting("email", { fromName: d.workspaceName, fromEmail: d.email, replyTo: d.email });
+  // Send from the verified domain when one is configured (EMAIL_FROM); replies always go to the owner.
+  await setSetting("email", { fromName: d.workspaceName, fromEmail: process.env.EMAIL_FROM || d.email, replyTo: d.email });
   await ensureSystemData();
   if (d.sampleData === "on") {
     try {

@@ -72,9 +72,11 @@ export const DEFAULT_SETTINGS: SettingsMap = {
     weekStartsOn: 1,
   },
   email: {
-    provider: "outbox",
+    // A server-provided Resend key (RESEND_API_KEY) makes real sending the default;
+    // EMAIL_FROM must be an address on a domain verified in Resend.
+    provider: process.env.RESEND_API_KEY ? "resend" : "outbox",
     fromName: "Relay",
-    fromEmail: "hello@example.com",
+    fromEmail: process.env.EMAIL_FROM || "hello@example.com",
     replyTo: null,
     resendApiKey: null,
     smtp: null,

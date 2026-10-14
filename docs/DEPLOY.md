@@ -12,7 +12,9 @@ this project is **Vercel** (app, region `syd1`) + **Supabase** (Postgres, `ap-so
 | `CRON_SECRET` | yes (prod) | Protects `/api/cron` (the background job runner). |
 | `SETUP_CODE` | recommended | Required on the first-run `/setup` page so only you can claim the workspace. Unused after setup. |
 | `APP_URL` | optional | Public base URL used in emails (defaults to the Vercel production URL). Set it when you add a custom domain. |
-| `RESEND_API_KEY` | optional | Fallback Resend key (the key can also be set in Settings → Email sending). |
+| `RESEND_API_KEY` | optional | Resend key. When set, Resend is the default sending method (a key saved in Settings → Email sending takes precedence). |
+| `EMAIL_FROM` | with Resend | Default sender address on a domain verified in Resend (e.g. `hello@ksaraevents.com`). Used at setup; editable in Settings. |
+| `RESEND_WEBHOOK_SECRET` | with Resend | Signing secret of the Resend webhook pointing at `/api/webhooks/resend` (events: bounced, complained, failed, suppressed). Hard bounces and spam complaints stop further email to that contact. |
 
 ## Database migrations
 
@@ -43,7 +45,8 @@ $$);
 
 ## Email sending
 
-Out of the box emails are **simulated** (visible in Emails → Outbox, nothing leaves the
+**Production is connected to Resend** (domain `ksaraevents.com`, API key `relay-crm-production`,
+webhook → `/api/webhooks/resend`). Without `RESEND_API_KEY`, emails are **simulated** (visible in Emails → Outbox, nothing leaves the
 app). To send for real go to **Settings → Email sending** and choose:
 
 - **Resend** – create an API key at resend.com and verify your sending domain (SPF/DKIM DNS
